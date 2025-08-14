@@ -692,6 +692,22 @@
         renderTable(filteredOrders);
         updateChart();
     </script>
+<script>
+(async function seedFromJsonOnce(){
+  if (localStorage.getItem('allOrders')) return; // уже есть данные — ничего не делаем
+  try {
+    const res = await fetch('data.json', { cache: 'no-store' });
+    if (!res.ok) return;
+    const d = await res.json();
+    if (Array.isArray(d.allOrders)) localStorage.setItem('allOrders', JSON.stringify(d.allOrders));
+    if (Array.isArray(d.currentMonthOrders)) localStorage.setItem('currentMonthOrders', JSON.stringify(d.currentMonthOrders));
+    if ('nextOrderId' in d) localStorage.setItem('nextOrderId', String(d.nextOrderId ?? 1));
+    if ('currentMonth' in d) localStorage.setItem('currentMonth', d.currentMonth || '');
+    location.reload(); // перезагрузка, чтобы таблица перерисовалась с данными
+  } catch (e) { console.error('seed failed', e); }
+})();
+</script>
+
 </body>
 </html>
 
