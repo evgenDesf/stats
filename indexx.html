@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отслеживание заказов</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background-color: #181818;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .header-left h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .month-display {
+            font-size: 14px;
+            color: #ccc;
+        }
+        .analytics-header {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .analytics-header div {
+            background-color: #282828;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            min-width: 120px;
+        }
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .search-container {
+            padding: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            background-color: #1DB954;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #1ed760;
+        }
+        button.delete-btn {
+            background-color: #FF0000;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: normal;
+        }
+        button.delete-btn:hover {
+            background-color: #ff3333;
+        }
+        #add-order-btn {
+            padding: 12px 24px;
+        }
+        #new-month-btn {
+            background-color: #FF6B35;
+            padding: 12px 24px;
+        }
+        #new-month-btn:hover {
+            background-color: #ff8555;
+        }
+        .table-container {
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #181818;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+        th {
+            background-color: #282828;
+        }
+        td[contenteditable="true"] {
+            cursor: pointer;
+        }
+        .status-cell {
+            position: relative;
+        }
+        .status-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #333;
+            border: 1px solid #555;
+            border-radius: 5px;
+            z-index: 100;
+            display: none;
+            min-width: 150px;
+        }
+        .status-option {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #555;
+        }
+        .status-option:last-child {
+            border-bottom: none;
+        }
+        .status-option:hover {
+            background-color: #444;
+        }
+        .status-paid {
+            background-color: #1DB954;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .status-waiting {
+            background-color: #FF6B35;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .status-delivered {
+            background-color: #1DB954;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .status-in-delivery {
+            background-color: #FFD700;
+            color: black;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .status-not-delivered {
+            background-color: #FF0000;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .chart-container {
+            padding: 20px;
+        }
+        .chart-controls {
+            margin-bottom: 20px;
+        }
+        #add-order-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #282828;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            z-index: 1000;
+        }
+        #modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            z-index: 999;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        input, textarea, select {
+            padding: 8px;
+            border-radius: 5px;
+            border: none;
+            background-color: #333;
+            color: white;
+        }
+        select {
+            cursor: pointer;
+        }
+        select option {
+            background-color: #333;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <h1>Отслеживание заказов</h1>
+            <div class="month-display">Текущий месяц: <span id="month-display"></span></div>
+        </div>
+        <div class="analytics-header">
+            <div>Продажи: <br><span id="total-sales">0</span></div>
+            <div>Заказов: <br><span id="total-orders">0</span></div>
+            <div>Доставлено: <br><span id="delivered-orders">0</span></div>
+            <div>В доставке: <br><span id="in-delivery-orders">0</span></div>
+            <div>Отказы: <br><span id="canceled-orders">0</span></div>
+        </div>
+        <div class="header-buttons">
+            <button id="add-order-btn">Добавить заказ</button>
+            <button id="new-month-btn">Новый месяц</button>
+        </div>
+    </div>
+    <div class="search-container">
+        <input type="text" id="search-input" placeholder="Поиск по заказам...">
+        <button id="search-btn">Поиск</button>
+    </div>
+    <div class="table-container">
+        <table id="order-table">
+            <thead>
+                <tr>
+                    <th>Номер</th>
+                    <th>Дата</th>
+                    <th>ИНН</th>
+                    <th>Номер телефона</th>
+                    <th>Статус оплаты</th>
+                    <th>Регион</th>
+                    <th>Дата доставки</th>
+                    <th>Статус доставки</th>
+                    <th>Сумма</th>
+                    <th>Комментарии</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <div class="chart-container">
+        <div class="chart-controls">
+            <button id="daily-view-btn">День</button>
+            <button id="monthly-view-btn">Месяц</button>
+            <button id="yearly-view-btn">Год</button>
+        </div>
+        <canvas id="order-chart"></canvas>
+    </div>
+    <div id="modal-overlay"></div>
+    <div id="add-order-modal">
+        <form id="add-order-form">
+            <label>Номер: <input type="text" name="orderNumber"></label>
+            <label>Дата: <input type="date" name="date"></label>
+            <label>ИНН: <input type="text" name="inn"></label>
+            <label>Номер телефона: <input type="tel" name="phoneNumber" placeholder="+7 (999) 123-45-67"></label>
+            <label>Статус оплаты: 
+                <select name="paymentStatus">
+                    <option value="">Выберите статус</option>
+                    <option value="Оплачено">Оплачено</option>
+                    <option value="Ждём оплату">Ждём оплату</option>
+                </select>
+            </label>
+            <label>Регион: <input type="text" name="region"></label>
+            <label>Дата доставки: <input type="date" name="deliveryDate"></label>
+            <label>Статус доставки: 
+                <select name="deliveryStatus">
+                    <option value="">Выберите статус</option>
+                    <option value="Доставлено">Доставлено</option>
+                    <option value="В доставке">В доставке</option>
+                    <option value="Не доставлено">Не доставлено</option>
+                </select>
+            </label>
+            <label>Сумма: <input type="number" name="amount" step="0.01"></label>
+            <label>Комментарии: <textarea name="comments"></textarea></label>
+            <div>
+                <button type="submit">Добавить</button>
+                <button type="button" id="cancel-btn">Отмена</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let allOrders = JSON.parse(localStorage.getItem('allOrders')) || [];
+        let currentMonthOrders = JSON.parse(localStorage.getItem('currentMonthOrders')) || [];
+        let nextOrderId = parseInt(localStorage.getItem('nextOrderId')) || 1;
+        let currentView = 'monthly';
+        let chart;
+        let filteredOrders = currentMonthOrders;
+        let currentMonth = localStorage.getItem('currentMonth') || getCurrentMonthString();
+
+        function getCurrentMonthString() {
+            const now = new Date();
+            return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+        }
+
+        function getTodayString() {
+            const now = new Date();
+            return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+        }
+
+        function updateMonthDisplay() {
+            document.getElementById('month-display').textContent = currentMonth;
+        }
+
+        function getStatusClass(status, type) {
+            if (type === 'payment') {
+                switch(status) {
+                    case 'Оплачено': return 'status-paid';
+                    case 'Ждём оплату': return 'status-waiting';
+                    default: return '';
+                }
+            } else if (type === 'delivery') {
+                switch(status) {
+                    case 'Доставлено': return 'status-delivered';
+                    case 'В доставке': return 'status-in-delivery';
+                    case 'Не доставлено': return 'status-not-delivered';
+                    default: return '';
+                }
+            }
+            return '';
+        }
+
+        function createStatusDropdown(type, currentValue, orderId) {
+            const options = type === 'payment' 
+                ? ['Оплачено', 'Ждём оплату']
+                : ['Доставлено', 'В доставке', 'Не доставлено'];
+            
+            let dropdown = `<div class="status-dropdown" id="dropdown-${type}-${orderId}">`;
+            options.forEach(option => {
+                dropdown += `<div class="status-option" onclick="selectStatus('${type}', '${option}', ${orderId})">${option}</div>`;
+            });
+            dropdown += '</div>';
+            return dropdown;
+        }
+
+        function selectStatus(type, status, orderId) {
+            const field = type === 'payment' ? 'paymentStatus' : 'deliveryStatus';
+            const currentOrder = currentMonthOrders.find(o => o.id === orderId);
+            const allOrder = allOrders.find(o => o.id === orderId);
+            
+            if (currentOrder) {
+                currentOrder[field] = status;
+                localStorage.setItem('currentMonthOrders', JSON.stringify(currentMonthOrders));
+            }
+            if (allOrder) {
+                allOrder[field] = status;
+                localStorage.setItem('allOrders', JSON.stringify(allOrders));
+            }
+            
+            // Hide dropdown
+            document.getElementById(`dropdown-${type}-${orderId}`).style.display = 'none';
+            
+            // Update table
+            renderTable(filteredOrders);
+            updateChart();
+        }
+
+        function renderTable(ordersToRender) {
+            const tbody = document.querySelector('#order-table tbody');
+            tbody.innerHTML = '';
+            ordersToRender.forEach(order => {
+                const tr = document.createElement('tr');
+                tr.setAttribute('data-id', order.id);
+                
+                const paymentStatusClass = getStatusClass(order.paymentStatus, 'payment');
+                const deliveryStatusClass = getStatusClass(order.deliveryStatus, 'delivery');
+                
+                tr.innerHTML = `
+                    <td contenteditable="true" data-field="orderNumber">${order.orderNumber}</td>
+                    <td contenteditable="true" data-field="date">${order.date}</td>
+                    <td contenteditable="true" data-field="inn">${order.inn}</td>
+                    <td contenteditable="true" data-field="phoneNumber">${order.phoneNumber || ''}</td>
+                    <td class="status-cell" onclick="toggleDropdown('payment', ${order.id})">
+                        <span class="${paymentStatusClass}">${order.paymentStatus}</span>
+                        ${createStatusDropdown('payment', order.paymentStatus, order.id)}
+                    </td>
+                    <td contenteditable="true" data-field="region">${order.region}</td>
+                    <td contenteditable="true" data-field="deliveryDate">${order.deliveryDate}</td>
+                    <td class="status-cell" onclick="toggleDropdown('delivery', ${order.id})">
+                        <span class="${deliveryStatusClass}">${order.deliveryStatus}</span>
+                        ${createStatusDropdown('delivery', order.deliveryStatus, order.id)}
+                    </td>
+                    <td contenteditable="true" data-field="amount">${order.amount}</td>
+                    <td contenteditable="true" data-field="comments">${order.comments}</td>
+                    <td><button class="delete-btn" data-id="${order.id}">×</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            updateAnalytics(ordersToRender);
+        }
+
+        function toggleDropdown(type, orderId) {
+            // Hide all other dropdowns
+            document.querySelectorAll('.status-dropdown').forEach(dropdown => {
+                dropdown.style.display = 'none';
+            });
+            
+            // Show the clicked dropdown
+            const dropdown = document.getElementById(`dropdown-${type}-${orderId}`);
+            if (dropdown) {
+                dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+            }
+        }
+
+        // Hide dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.status-cell')) {
+                document.querySelectorAll('.status-dropdown').forEach(dropdown => {
+                    dropdown.style.display = 'none';
+                });
+            }
+        });
+
+        function updateAnalytics(ordersToRender) {
+            const totalSales = ordersToRender.reduce((sum, order) => sum + parseFloat(order.amount || 0), 0);
+            const totalOrders = ordersToRender.length;
+            const deliveredOrders = ordersToRender.filter(order => order.deliveryStatus === 'Доставлено').length;
+            const inDeliveryOrders = ordersToRender.filter(order => order.deliveryStatus === 'В доставке').length;
+            const canceledOrders = ordersToRender.filter(order => order.deliveryStatus === 'Не доставлено').length;
+            document.getElementById('total-sales').textContent = totalSales.toFixed(2);
+            document.getElementById('total-orders').textContent = totalOrders;
+            document.getElementById('delivered-orders').textContent = deliveredOrders;
+            document.getElementById('in-delivery-orders').textContent = inDeliveryOrders;
+            document.getElementById('canceled-orders').textContent = canceledOrders;
+        }
+
+        function updateChart() {
+            const ctx = document.getElementById('order-chart').getContext('2d');
+            let labels = [];
+            let ordersData = [];
+            let deliveredData = [];
+            
+            if (currentView === 'daily') {
+                const dailyData = {};
+                const dailyDelivered = {};
+                allOrders.forEach(order => {
+                    const date = order.date;
+                    dailyData[date] = (dailyData[date] || 0) + parseFloat(order.amount || 0);
+                    if (order.deliveryStatus === 'Доставлено') {
+                        dailyDelivered[date] = (dailyDelivered[date] || 0) + parseFloat(order.amount || 0);
+                    }
+                });
+                labels = Object.keys(dailyData).sort();
+                ordersData = labels.map(key => dailyData[key]);
+                deliveredData = labels.map(key => dailyDelivered[key] || 0);
+            } else if (currentView === 'monthly') {
+                const monthlyData = {};
+                const monthlyDelivered = {};
+                allOrders.forEach(order => {
+                    const date = new Date(order.date);
+                    const key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+                    monthlyData[key] = (monthlyData[key] || 0) + parseFloat(order.amount || 0);
+                    if (order.deliveryStatus === 'Доставлено') {
+                        monthlyDelivered[key] = (monthlyDelivered[key] || 0) + parseFloat(order.amount || 0);
+                    }
+                });
+                labels = Object.keys(monthlyData).sort();
+                ordersData = labels.map(key => monthlyData[key]);
+                deliveredData = labels.map(key => monthlyDelivered[key] || 0);
+            } else {
+                const yearlyData = {};
+                const yearlyDelivered = {};
+                allOrders.forEach(order => {
+                    const year = new Date(order.date).getFullYear();
+                    yearlyData[year] = (yearlyData[year] || 0) + parseFloat(order.amount || 0);
+                    if (order.deliveryStatus === 'Доставлено') {
+                        yearlyDelivered[year] = (yearlyDelivered[year] || 0) + parseFloat(order.amount || 0);
+                    }
+                });
+                labels = Object.keys(yearlyData).sort();
+                ordersData = labels.map(year => yearlyData[year]);
+                deliveredData = labels.map(year => yearlyDelivered[year] || 0);
+            }
+            
+            if (chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Заказы',
+                        data: ordersData,
+                        backgroundColor: 'rgba(29, 185, 84, 0.1)',
+                        borderColor: '#1DB954',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.4,
+                        pointBackgroundColor: '#1DB954',
+                        pointBorderColor: '#1DB954',
+                        pointRadius: 5
+                    }, {
+                        label: 'Выкуплено',
+                        data: deliveredData,
+                        backgroundColor: 'rgba(255, 107, 53, 0.3)',
+                        borderColor: '#FF6B35',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#FF6B35',
+                        pointBorderColor: '#FF6B35',
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'white'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: 'white'
+                            },
+                            grid: {
+                                color: '#333'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: 'white'
+                            },
+                            grid: {
+                                color: '#333'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function addOrder(event) {
+            event.preventDefault();
+            const form = document.getElementById('add-order-form');
+            
+            // Create order with default values if fields are empty
+            const newOrder = {
+                id: nextOrderId,
+                orderNumber: form.orderNumber.value || `ORD-${nextOrderId}`,
+                date: form.date.value || getTodayString(),
+                inn: form.inn.value || '',
+                phoneNumber: form.phoneNumber.value || '',
+                paymentStatus: form.paymentStatus.value || '',
+                region: form.region.value || '',
+                deliveryDate: form.deliveryDate.value || '',
+                deliveryStatus: form.deliveryStatus.value || '',
+                amount: form.amount.value || '0',
+                comments: form.comments.value || '',
+                month: currentMonth
+            };
+            
+            currentMonthOrders.push(newOrder);
+            allOrders.push(newOrder);
+            nextOrderId++;
+            
+            localStorage.setItem('nextOrderId', nextOrderId);
+            localStorage.setItem('currentMonthOrders', JSON.stringify(currentMonthOrders));
+            localStorage.setItem('allOrders', JSON.stringify(allOrders));
+            
+            filteredOrders = currentMonthOrders;
+            renderTable(filteredOrders);
+            updateChart();
+            form.reset();
+            toggleModal(false);
+        }
+
+        function searchOrders() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            filteredOrders = currentMonthOrders.filter(order => 
+                Object.values(order).some(value => 
+                    value.toString().toLowerCase().includes(searchTerm)
+                )
+            );
+            renderTable(filteredOrders);
+        }
+
+        function toggleModal(show) {
+            document.getElementById('add-order-modal').style.display = show ? 'block' : 'none';
+            document.getElementById('modal-overlay').style.display = show ? 'block' : 'none';
+            
+            if (show) {
+                // Set today's date as default
+                document.querySelector('input[name="date"]').value = getTodayString();
+            }
+        }
+
+        function startNewMonth() {
+            if (confirm('Вы уверены, что хотите начать новый месяц? Текущие данные будут сохранены в истории.')) {
+                currentMonth = getCurrentMonthString();
+                currentMonthOrders = [];
+                localStorage.setItem('currentMonth', currentMonth);
+                localStorage.setItem('currentMonthOrders', JSON.stringify(currentMonthOrders));
+                filteredOrders = currentMonthOrders;
+                updateMonthDisplay();
+                renderTable(filteredOrders);
+                updateChart();
+            }
+        }
+
+        document.getElementById('add-order-btn').addEventListener('click', () => toggleModal(true));
+        document.getElementById('cancel-btn').addEventListener('click', () => toggleModal(false));
+        document.getElementById('add-order-form').addEventListener('submit', addOrder);
+        document.getElementById('search-btn').addEventListener('click', searchOrders);
+        document.getElementById('new-month-btn').addEventListener('click', startNewMonth);
+
+        document.getElementById('daily-view-btn').addEventListener('click', () => {
+            currentView = 'daily';
+            updateChart();
+        });
+        document.getElementById('monthly-view-btn').addEventListener('click', () => {
+            currentView = 'monthly';
+            updateChart();
+        });
+        document.getElementById('yearly-view-btn').addEventListener('click', () => {
+            currentView = 'yearly';
+            updateChart();
+        });
+
+        document.getElementById('order-table').addEventListener('click', (e) => {
+            if (e.target.classList.contains('delete-btn')) {
+                const id = parseInt(e.target.dataset.id);
+                currentMonthOrders = currentMonthOrders.filter(order => order.id !== id);
+                allOrders = allOrders.filter(order => order.id !== id);
+                localStorage.setItem('currentMonthOrders', JSON.stringify(currentMonthOrders));
+                localStorage.setItem('allOrders', JSON.stringify(allOrders));
+                
+                const searchTerm = document.getElementById('search-input').value.toLowerCase();
+                if (searchTerm) {
+                    filteredOrders = currentMonthOrders.filter(order => 
+                        Object.values(order).some(value => 
+                            value.toString().toLowerCase().includes(searchTerm)
+                        )
+                    );
+                } else {
+                    filteredOrders = currentMonthOrders;
+                }
+                renderTable(filteredOrders);
+                updateChart();
+            }
+        });
+
+        document.getElementById('order-table').addEventListener('input', (e) => {
+            if (e.target.tagName === 'TD' && e.target.hasAttribute('contenteditable')) {
+                const id = parseInt(e.target.parentNode.getAttribute('data-id'));
+                const field = e.target.dataset.field;
+                const newValue = e.target.textContent;
+                
+                const currentOrder = currentMonthOrders.find(o => o.id === id);
+                const allOrder = allOrders.find(o => o.id === id);
+                
+                if (currentOrder) {
+                    currentOrder[field] = newValue;
+                    localStorage.setItem('currentMonthOrders', JSON.stringify(currentMonthOrders));
+                }
+                if (allOrder) {
+                    allOrder[field] = newValue;
+                    localStorage.setItem('allOrders', JSON.stringify(allOrders));
+                }
+                
+                updateChart();
+            }
+        });
+
+        // Initialize
+        localStorage.setItem('currentMonth', currentMonth);
+        updateMonthDisplay();
+        renderTable(filteredOrders);
+        updateChart();
+    </script>
+</body>
+</html>
+
